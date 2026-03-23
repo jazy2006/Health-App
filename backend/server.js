@@ -4,6 +4,8 @@ const cors = require('cors');
 const nodemailer = require('nodemailer');
 const { createClient } = require('@supabase/supabase-js');
 const { GoogleGenAI } = require('@google/genai');
+const fs = require('fs');
+
 
 const app = express();
 const path = require('path');
@@ -11,15 +13,23 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files from the React app dist folder
-app.use(express.static(path.join(__dirname, '../dist')));
-
-
 // Request Logger
 app.use((req, res, next) => {
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
     next();
 });
+
+// Sanity check for dist folder
+const distPath = path.join(__dirname, '../dist');
+if (fs.existsSync(distPath)) {
+    console.log(`[Server] ✅ dist folder found at: ${distPath}`);
+} else {
+    console.error(`[Server] ❌ dist folder NOT FOUND at: ${distPath}. Build may have failed.`);
+}
+
+// Serve static files from the React app dist folder
+app.use(express.static(distPath));
+
 
 // Initialize Supabase Client if env vars exist
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -380,8 +390,25 @@ app.get('/health', (req, res) => res.json({ status: 'Health Bridge Online' }));
 
 // The "catchall" handler: for any request that doesn't match one above, send back React's index.html file.
 app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../dist/index.html'));
+    const indexPath = path.join(__dirname, '../dist/index.html');
+    if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+    } else {
+        res.status(404).send(`
+            <div style="font-family: sans-serif; padding: 2rem; text-align: center; max-width: 600px; margin: 0 auto; line-height: 1.6;">
+                <h1 style="color: #8b5cf6;">🏥 Health Bridge - Initializing</h1>
+                <p>The backend is running, but the frontend files (dist) are missing or still building.</p>
+                <div style="background: #f3f4f6; padding: 1rem; border-radius: 8px; margin: 1.5rem 0; font-family: monospace; text-align: left; font-size: 0.85rem;">
+                    <b>Diagnostic Info:</b><br>
+                    Path: ${indexPath}<br>
+                    Time: ${new Date().toISOString()}
+                </div>
+                <p>Please refresh in 1 minute. If this persists, check the <b>Logs</b> tab in your Space. ⚙️</p>
+            </div>
+        `);
+    }
 });
+
 
 if (require.main === module) {
     app.listen(PORT, '0.0.0.0', () => {

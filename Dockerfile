@@ -16,7 +16,7 @@ RUN cd backend && npm install
 COPY . .
 
 # Build the React frontend
-RUN npm run build
+RUN npm run build && ls -la dist
 
 # Expose the port (Hugging Face default is 7860)
 EXPOSE 7860
