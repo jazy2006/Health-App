@@ -342,7 +342,8 @@ app.post('/api/invite', async (req, res) => {
             });
         }
 
-        const inviteLink = "https://healthbridge.app/share/johndoe-xyz89";
+        const origin = req.headers.origin || `https://${req.headers.host}`;
+        const inviteLink = `${origin}/share/johndoe-xyz89`;
 
         await transporter.sendMail({
             from: `"Health Bridge" <${smtpUser || 'noreply@healthbridge.com'}>`,

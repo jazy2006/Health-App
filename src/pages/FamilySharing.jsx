@@ -114,7 +114,7 @@ export default function FamilySharing() {
                             <input
                                 type="text"
                                 readOnly
-                                value="https://healthbridge.app/share/johndoe-xyz89"
+                                value={`${window.location.origin}/share/johndoe-xyz89`}
                                 style={{ flex: 1, fontSize: '0.875rem', background: 'var(--background)' }}
                             />
                             <button
