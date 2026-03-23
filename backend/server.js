@@ -1,4 +1,5 @@
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 const express = require('express');
 const cors = require('cors');
 const nodemailer = require('nodemailer');
@@ -196,16 +197,16 @@ app.post('/api/appointments', async (req, res) => {
 
     try {
         let transporter;
+
         if (process.env.SMTP_USER && process.env.SMTP_PASS) {
             transporter = nodemailer.createTransport({
-                host: "smtp.gmail.com",
-                port: 465,
-                secure: true,
-                auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
+                service: 'gmail',
+                auth: {
+                    user: process.env.SMTP_USER,
+                    pass: process.env.SMTP_PASS
+                }
             });
-            console.log(`[Email] Using Gmail for ${process.env.SMTP_USER}`);
         } else {
-            console.log("⚠️ No Email Credentials in .env. Using Ethereal Test Account...");
             const testAccount = await nodemailer.createTestAccount();
             transporter = nodemailer.createTransport({
                 host: "smtp.ethereal.email",
@@ -220,10 +221,6 @@ app.post('/api/appointments', async (req, res) => {
             subject: "Appointment Confirmed",
             text: `Doctor: ${doctorName}, Time: ${slot}`
         });
-
-        if (!process.env.SMTP_USER) {
-            console.log(`[Email Preview]: ${nodemailer.getTestMessageUrl(info)}`);
-        }
 
         await recordActivity(`Booked ${doctorName}`);
 
@@ -257,9 +254,7 @@ app.post('/api/invite', async (req, res) => {
         let transporter;
         if (process.env.SMTP_USER && process.env.SMTP_PASS) {
             transporter = nodemailer.createTransport({
-                host: "smtp.gmail.com",
-                port: 465,
-                secure: true,
+                service: 'gmail',
                 auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
             });
         } else {
@@ -274,7 +269,7 @@ app.post('/api/invite', async (req, res) => {
         const origin = req.headers.origin || `https://${req.headers.host}`;
         const inviteLink = `${origin}/share/johndoe-xyz89`;
 
-        const info = await transporter.sendMail({
+        await transporter.sendMail({
             from: '"Health Bridge" <noreply@hb.com>',
             to: email,
             subject: "Invitation to Join Care Circle",
@@ -282,24 +277,19 @@ app.post('/api/invite', async (req, res) => {
                 <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 12px; max-width: 500px;">
                     <h2 style="color: #8b5cf6;">Health Bridge Invitation ✨</h2>
                     <p>You have been invited to join a health care circle on Health Bridge.</p>
+                    <p>This allows you to stay updated with vitals and care records in real-time.</p>
                     <a href="${inviteLink}" style="display: inline-block; padding: 12px 24px; background: #8b5cf6; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">View Health Dashboard</a>
+                    <p style="font-size: 0.8em; color: #999; margin-top: 20px;">If you weren't expecting this, you can safely ignore this email.</p>
                 </div>
             `
         });
 
-        if (!process.env.SMTP_USER) {
-            console.log(`[Invite Preview]: ${nodemailer.getTestMessageUrl(info)}`);
-        }
-
         await recordActivity(`Sent invite to ${email}`);
-        res.json({ success: true, message: 'Invitation sent!', preview: !process.env.SMTP_USER ? nodemailer.getTestMessageUrl(info) : null });
+        res.json({ success: true, message: 'Invitation sent!' });
 
     } catch (err) {
-        console.error("Invite Error Details:", err.message);
-        if (err.message.includes('Invalid login')) {
-            console.error("💡 TIP: If using Gmail, you MUST use an 'App Password', not your regular password.");
-        }
-        res.status(500).json({ error: "Failed to send invitation. Check server logs." });
+        console.error("Invite failed:", err);
+        res.status(500).json({ error: "Failed to send invitation" });
     }
 });
 
