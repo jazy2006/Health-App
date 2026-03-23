@@ -12,7 +12,22 @@ export default function GeminiAssistant() {
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
     const [hasUnread, setHasUnread] = useState(false);
+    const [isOnline, setIsOnline] = useState(false);
     const messagesEndRef = useRef(null);
+
+    useEffect(() => {
+        const checkStatus = async () => {
+            try {
+                const res = await fetch('/health');
+                setIsOnline(res.ok);
+            } catch {
+                setIsOnline(false);
+            }
+        };
+        checkStatus();
+        const interval = setInterval(checkStatus, 30000); // Check every 30s
+        return () => clearInterval(interval);
+    }, []);
 
     useEffect(() => {
         if (isOpen) {
@@ -20,6 +35,7 @@ export default function GeminiAssistant() {
             messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
         }
     }, [messages, isOpen]);
+
 
     const sendMessage = async () => {
         if (!input.trim() || loading) return;
@@ -115,9 +131,10 @@ export default function GeminiAssistant() {
                             <div>
                                 <div style={{ color: 'white', fontWeight: 700, fontSize: '0.95rem' }}>Bridge AI</div>
                                 <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#4ade80', display: 'inline-block' }}></span>
-                                    Powered by Gemini
+                                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: isOnline ? '#4ade80' : '#f43f5e', display: 'inline-block' }}></span>
+                                    {isOnline ? 'Powered by Gemini' : 'Gemini Offline'}
                                 </div>
+
                             </div>
                         </div>
                         <div style={{ display: 'flex', gap: '0.5rem' }}>

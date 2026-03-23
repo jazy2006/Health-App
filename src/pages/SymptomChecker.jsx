@@ -10,6 +10,21 @@ export default function SymptomChecker() {
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
     const [report, setReport] = useState(null);
+    const [isOnline, setIsOnline] = useState(false);
+
+    React.useEffect(() => {
+        const checkStatus = async () => {
+            try {
+                const res = await fetch('/health');
+                setIsOnline(res.ok);
+            } catch {
+                setIsOnline(false);
+            }
+        };
+        checkStatus();
+        const interval = setInterval(checkStatus, 30000);
+        return () => clearInterval(interval);
+    }, []);
 
     const handleSend = async () => {
         if (!input.trim()) return;
@@ -65,9 +80,16 @@ export default function SymptomChecker() {
             {/* Target: Symptom Checker Form/Chatbot */}
             <div className="card" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
                 <div className="card-header" style={{ borderBottom: '1px solid var(--border)', paddingBottom: '1rem' }}>
-                    <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <MessageSquare size={24} color="var(--primary)" /> NovaAI Assistant
-                    </h2>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <MessageSquare size={24} color="var(--primary)" /> NovaAI Assistant
+                        </h2>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
+                            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: isOnline ? '#10b981' : '#f43f5e' }}></span>
+                            <span style={{ color: isOnline ? '#10b981' : '#f43f5e', fontWeight: 600 }}>{isOnline ? 'Online' : 'Offline'}</span>
+                        </div>
+                    </div>
+
                 </div>
 
                 <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem 0', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
