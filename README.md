@@ -1,4 +1,15 @@
-# React + Vite
+---
+title: Health Bridge App
+emoji: 🏥
+colorFrom: indigo
+colorTo: blue
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
+# 🏥 Health Bridge App
+
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 

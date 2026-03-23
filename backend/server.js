@@ -6,9 +6,14 @@ const { createClient } = require('@supabase/supabase-js');
 const { GoogleGenAI } = require('@google/genai');
 
 const app = express();
+const path = require('path');
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve static files from the React app dist folder
+app.use(express.static(path.join(__dirname, '../dist')));
+
 
 // Request Logger
 app.use((req, res, next) => {
@@ -367,12 +372,19 @@ app.post('/api/invite', async (req, res) => {
     }
 });
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 7860;
+// Health Check
 app.get('/health', (req, res) => res.json({ status: 'Health Bridge Online' }));
+
+
+// The "catchall" handler: for any request that doesn't match one above, send back React's index.html file.
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../dist/index.html'));
+});
 
 if (require.main === module) {
     app.listen(PORT, '0.0.0.0', () => {
-        console.log(`[Health Bridge] Backend READY at http://127.0.0.1:${PORT}`);
+        console.log(`[Health Bridge] Backend READY at http://0.0.0.0:${PORT}`);
     });
 }
 
