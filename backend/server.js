@@ -6,9 +6,8 @@ const nodemailer = require('nodemailer');
 const { createClient } = require('@supabase/supabase-js');
 const { GoogleGenAI } = require('@google/genai');
 const fs = require('fs');
-const path = require('path');
-
 const app = express();
+
 
 // Middleware
 app.use(cors());
