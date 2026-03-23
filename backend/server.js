@@ -83,18 +83,25 @@ app.get('/api/ai/search', async (req, res) => {
 
     if (apiKey) {
         try {
-            const ai = new GoogleGenAI({ apiKey });
-
-            const prompt = `User condition: "${disease}"
-Return JSON:
-{"message":"short reply","specialty":"Doctor type"}`;
-
-            const response = await ai.models.generateContent({
+            const ai = new GoogleGenAI(apiKey);
+            const model = ai.getGenerativeModel({
                 model: "gemini-1.5-flash",
-                contents: prompt
+                generationConfig: { maxOutputTokens: 500, temperature: 0.7 },
+                safetySettings: [
+                    { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
+                    { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
+                    { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
+                    { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' }
+                ]
             });
 
-            const clean = response.text.replace(/```/g, '').trim();
+            const prompt = `You are NovaAI, a professional health assistant. Analyze: "${disease}".
+            Return JSON only: { "specialty": "Doctor Specialty", "message": "Brief advice and next steps" }`;
+
+            const result = await model.generateContent(prompt);
+            const text = result.response.text();
+
+            const clean = text.replace(/```/g, '').trim();
             const data = JSON.parse(clean);
 
             const doctor = fallbackDB.find(d =>
@@ -138,19 +145,24 @@ app.post('/api/ai/chat', async (req, res) => {
 
     if (apiKey) {
         try {
-            const ai = new GoogleGenAI({ apiKey });
-
-            const response = await ai.models.generateContent({
+            const ai = new GoogleGenAI(apiKey);
+            const model = ai.getGenerativeModel({
                 model: "gemini-1.5-flash",
-                contents: message
+                systemInstruction: "You are Bridge AI, a friendly and helpful health assistant for the Health Bridge app. Provide concise, caring health information. Always advise consulting a professional for serious issues.",
+                safetySettings: [
+                    { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' }
+                ]
             });
 
-            await recordActivity(`Chat: ${message}`);
+            const result = await model.generateContent(message);
+            const reply = result.response.text();
 
-            return res.json({ reply: response.text });
+            await recordActivity(`Chat: ${message.substring(0, 30)}...`);
+
+            return res.json({ reply });
 
         } catch (err) {
-            console.log("Chat AI failed");
+            console.log("Chat AI failed:", err.message);
         }
     }
 
